@@ -1,5 +1,5 @@
 # streamlit run "C:/Users/keno/OneDrive/Documents/Projects/n_secondbrain/0_FIXED.py"
-# Create me a paper about revisi RUU TNI that is currently happening in Indonesia. 
+# Create me a paper about Jokowi being the finalist for OCCRP
 
 import streamlit as st
 import requests
@@ -21,6 +21,8 @@ from PIL import Image
 import base64
 import random
 from urllib.parse import quote_plus
+import nltk
+nltk.download('punkt_tab')
 
 # ============================================== HTML AND CSS =========================================================================================
 
@@ -501,7 +503,7 @@ def iterative_refinement(initial_prompt, internet_knowledge, iterations=5, globa
             f"Overall Context: {global_context}\n\n"
             f"Internet Knowledge (truncated): {truncated_knowledge}\n\n"
             f"Based on this output: '{current_response}', identify any weaknesses or missing information. "
-            "Provide feedback in 3-5 paragraphs."
+            f"Provide feedback in 7-9 bullet points, make sure the points are mid-long detailed sentences."
         )
         feedback = llm_generate(feedback_prompt, model=model)
         time.sleep(np.random.randint(4, 7))
@@ -510,12 +512,14 @@ def iterative_refinement(initial_prompt, internet_knowledge, iterations=5, globa
         revision_prompt = (
             f"Overall Context: {global_context}\n\n"
             f"Internet Knowledge (truncated): {truncated_knowledge}\n\n"
+            f"Make sure to bring up sentences, statistics, statements, or ANYTHING RELEVANT as CONCRETE SUPPORTING EVIDENCE (Bring it up inside the Content Paragraphs and NOT OUTSIDE)."
             f"Taking into account the following feedback: '{feedback}', revise and improve this output: "
             f"'{current_response}' based on the initial prompt: '{initial_prompt}'.\n"
             "The Format should be:\n"
             "Summary:\n[One short paragraph summary (2-3 sentences)]\n\n"
-            "Content:\n[5-7 paragraphs of refined content]\n\n"
+            "Content:\n[600-800 words (PARAGRAPH) of refined content]\n\n"
             "Ensure that the response strictly follows this format."
+            "DO NOT DO ANY OTHER FORMAT THAN PARAGRAPH (DO NOT do tables, bullet points, etc, just PARAGRAPH.)"
         )
         current_response = llm_generate(revision_prompt, model=model)
         time.sleep(np.random.randint(4, 7))
@@ -533,8 +537,9 @@ def iterative_refinement(initial_prompt, internet_knowledge, iterations=5, globa
         f"And considering the previous best response:\n{current_response}\n"
         "The Format should be:\n"
         "Summary:\n[One short paragraph summary (2-3 sentences)]\n\n"
-        "Content:\n[5-7 paragraphs of refined content]\n\n"
+        "Content:\n[600-800 words (PARAGRAPH) of refined content]\n\n"
         "Ensure that the response strictly follows this format."
+        "DO NOT DO ANY OTHER FORMAT THAN PARAGRAPH (DO NOT do tables, bullet points, etc, just PARAGRAPH.)"
     )
     final_response = llm_generate(final_prompt, model=model)
     time.sleep(np.random.randint(4, 7))
@@ -775,11 +780,11 @@ if (prompt_input
         debug_log = ""
         
         # Step 2: Generate Detailed Prompts for each TOC part
-        debug_log += "Generating Detailed Prompts...\n"
+        debug_log = "Generating Detailed Prompts...\n"
         progress_container.info(debug_log)
         global_context = f"Overall Table of Contents: {st.session_state['toc_locked']}\n\n"
         content_prompts = generate_prompts_for_parts(parts_list, model=model, global_context=global_context)
-        debug_log += "Detailed Prompts generated.\n"
+        debug_log = "Detailed Prompts generated.\n"
         progress_container.info(debug_log)
         
         # Step 3: Internet Search (if enabled) for each TOC part
@@ -790,7 +795,7 @@ if (prompt_input
             queries_by_part = make_prompt_queries(prompt_input, n_parts=len(parts_list), model=model) #get queries
             
             for idx, part in enumerate(parts_list, start=1):
-                debug_log += f"\nStarting data collection for TOC part {idx}\n"
+                debug_log = f"\nStarting data collection for TOC part {idx}\n"
                 progress_container.info(debug_log)
                 part_content = ""
                 part_data = []
@@ -799,12 +804,12 @@ if (prompt_input
                 for query in queries_by_part.get(f"Part {idx}", []):
                     # Append date filters to the query
                     formatted_query = f"{query} after:{after_date} before:{before_date}"
-                    debug_log += f"Part {idx}: Searching with query: {formatted_query}\n"
+                    debug_log = f"Part {idx}: Searching with query: {formatted_query}\n"
                     progress_container.info(debug_log)
                     
                     news_data = getNewsData(formatted_query)
                     if not news_data:
-                        debug_log += f"Warning: No news data returned for query: {formatted_query}\n"
+                        debug_log = f"Warning: No news data returned for query: {formatted_query}\n"
                         progress_container.info(debug_log)
                     
                     links = [item["link"] for item in news_data]
@@ -820,21 +825,21 @@ if (prompt_input
                                 "content": article["content"],
                                 "link": article["link"]
                             })
-                    debug_log += f"After query '{query}', downloaded articles count for Part {idx}: {len(part_data)}\n"
+                    debug_log = f"After query '{query}', downloaded articles count for Part {idx}: {len(part_data)}\n"
                     progress_container.info(debug_log)
                     time.sleep(1)
                 # Store the internet knowledge and dataframe for this part
                 internet_knowledge[part] = part_content
                 df = pd.DataFrame(part_data)
                 excel_dataframes[f"internetsearch_part{idx}"] = df
-                debug_log += f"Final article count for TOC Part {idx}: {len(df)}\n"
+                debug_log = f"Final article count for TOC Part {idx}: {len(df)}\n"
                 progress_container.info(debug_log)
         
         # Step 4: Iterative Refinement for each TOC part
         refined_results = []
         total_parts = len(content_prompts)
         for idx, cp in enumerate(content_prompts, start=0):
-            debug_log += f"Processing iterative refinement for Part {idx+1}/{total_parts}...\n"
+            debug_log = f"Processing iterative refinement for Part {idx+1}/{total_parts}...\n"
             progress_container.info(debug_log)
             
             # Get the internet knowledge (content) for the corresponding part; if not available, pass an empty string
@@ -852,7 +857,7 @@ if (prompt_input
                 "INITIAL OUTPUT": init_response[0],
                 "THINKING LOGS": thinking_logs
             })
-            debug_log += f"Finished refinement for Part {idx+1}\n"
+            debug_log = f"Finished refinement for Part {idx+1}\n"
             progress_container.info(debug_log)
             time.sleep(1)
         progress_container.empty()
@@ -900,13 +905,8 @@ if (prompt_input
     st.session_state["ready_to_download"] = True
     st.session_state["process_done"] = True
 
-    # Display TOC Parts and Queries (for debugging)
-    st.subheader("TOC Parts:")
-    for part in parts_list:
-        st.write(f"- {part}")
-    
     if use_internet:
-        with st.expander("Generated Queries for Each TOC Part (Debug Info)"):
+        with st.expander("Generated Queries for Each TOC Part (Debug Info)",expanded=True):
             for part, queries in queries_by_part.items():
                 st.write(f"**{part}:**")
                 for query in queries:
