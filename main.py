@@ -479,26 +479,34 @@ def visualize_iterative_embeddings(embeddings):
 
 def iterative_refinement(initial_prompt, internet_knowledge, iterations=5, global_context="", model=None):
     """
-    Refines the initial prompt iteratively.
-    Uses the top 15,000 characters of the internet_knowledge (extracted from the content column for a given TOC part).
+    Refines the initial prompt iteratively, using different 15,000-character chunks of internet_knowledge.
     Returns the final refined output, the initial output, and all thinking logs.
     """
-    # Truncate internet knowledge to top 15000 characters for the current TOC part
-    truncated_knowledge = internet_knowledge[:15000]
-    
-    combined_prompt = f"{global_context}\n\n{truncated_knowledge}\n\n{initial_prompt}" if global_context or truncated_knowledge else initial_prompt
-    initial_response = llm_generate(combined_prompt, model=model)
-    time.sleep(np.random.randint(4, 7))
+    knowledge_len = len(internet_knowledge)
+    chunk_size = 15000
     
     thinking_logs = []
-    all_responses = [initial_response]
+    all_responses = []
+    
+    # Handle the first iteration separately to get the initial response
+    start_index = 0
+    end_index = min(start_index + chunk_size, knowledge_len)
+    truncated_knowledge = internet_knowledge[start_index:end_index]
+    combined_prompt = f"{global_context}\n\n{truncated_knowledge}\n\n{initial_prompt}" if global_context or truncated_knowledge else initial_prompt
+    initial_response = llm_generate(combined_prompt, model=model)
+    all_responses.append(initial_response)
+    
     current_response = initial_response
     embeddings, vectorizer = embed(current_response)
     embeddings = [embeddings]
     max_diff_response = initial_response
     max_diff = 0
 
-    for i in range(iterations):
+    for i in range(1, iterations):  # Start from 1 since 0 is already handled
+        start_index = (i * chunk_size) % knowledge_len
+        end_index = min(start_index + chunk_size, knowledge_len)
+        truncated_knowledge = internet_knowledge[start_index:end_index]
+        
         feedback_prompt = (
             f"Overall Context: {global_context}\n\n"
             f"Internet Knowledge (truncated): {truncated_knowledge}\n\n"
