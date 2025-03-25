@@ -335,6 +335,7 @@ def make_prompt_queries(prompt, n_parts, model):
             3. Query 3
             4. Query 4
             5. Query 5
+            If the requested output is Code, then DO NOT WRITE CODE AS THE QUERY, but USE KEY WORDS OF THE PROJECT TO GENERATE AS QUERY.
         """
         try:
             response = model.generate_content(part_prompt)
