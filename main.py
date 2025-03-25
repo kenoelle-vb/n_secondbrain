@@ -1,5 +1,5 @@
 # streamlit run "C:/Users/keno/OneDrive/Documents/Projects/n_secondbrain/0_FIXED.py"
-# Create me a paper about Jokowi being the finalist for OCCRP
+# Create me a detailed guide and plan for me as an Indonesian to be able to work or be a university student (Master's) in Japan.
 
 import streamlit as st
 import requests
@@ -361,24 +361,25 @@ def table_of_contents(prompt, n_parts=5, model=None):
         configure_model()
         model = st.session_state["model"]
 
-    if model is None :
+    if model is None:
         st.error("Model did not load successfully, please reset the website.")
         return ""
 
     full_prompt = f"""
-    For this prompt: {prompt}
-    Divide the task in the prompt into {n_parts} parts.
-    Generate a short title for each part.
-    Just generate the list of titles, nothing else.
-    Follow the format here : 
-    Part 1: (title)
-    Part 2: (title)
-    Make sure every part is separated by a spaced line, and every line can only have 1 part.  
+        For this prompt: {prompt}
+        Divide the task in the prompt into {n_parts} parts.
+        Generate a short title for each part.
+        Just generate the list of titles, nothing else.
+        Follow the format here : 
+        Part 1: (title)
+        Part 2: (title)
+        Make sure every part is separated by a spaced line, and every line can only have 1 part.
     """
 
     response = model.generate_content(full_prompt)
     toc_text = response.text.strip()
-    return toc_text
+    markdown_output = toc_text.replace('\n', '  \n')  # Add double space for markdown line breaks
+    return markdown_output
 
 def extract_parts(toc_text):
     """
