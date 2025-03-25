@@ -1,4 +1,4 @@
-# streamlit run "C:/Users/keno/OneDrive/Documents/Projects/n_secondbrain/0_FIXED.py"
+# streamlit run "C:/Users/keno/OneDrive/Documents/Projects/n_secondbrain/1_TESTAGAIN.py"
 # Create me a detailed guide and plan for me as an Indonesian to be able to work or be a university student (Master's) in Japan.
 
 import streamlit as st
@@ -319,37 +319,40 @@ def make_prompt_queries_for_part(prompt, n_queries=5, model=None):
 def make_prompt_queries(prompt, n_parts, model):
     """
     Generates Google search queries for each part of the Table of Contents (TOC).
-
-    Args:
-        prompt (str): The main prompt from the user.
-        n_parts (int): The number of parts in the TOC.
-        model (genai.GenerativeModel): The generative AI model.
-
-    Returns:
-        dict: A dictionary where keys are TOC parts and values are lists of search queries.
+    Handles potential variations in LLM response format to prevent index errors.
     """
     queries_by_part = {}
     for i in range(n_parts):
         part_prompt = f"""
-        For this main prompt: {prompt}, generate 5 google search queries. 
-        These queries must be for part {i + 1} of the prompt.
-        These queries must be very specific, and should not use quotation marks unless it is for a name or institution.
-        Do not mention the other parts.
-        Do not include any other text except for the queries.
-        Follow this format:
-        1. Query 1
-        2. Query 2
-        3. Query 3
-        4. Query 4
-        5. Query 5
+            For this main prompt: {prompt}, generate 5 google search queries. 
+            These queries must be for part {i + 1} of the prompt.
+            These queries must be very specific, and should not use quotation marks unless it is for a name or institution.
+            Do not mention the other parts.
+            Do not include any other text except for the queries.
+            Follow this format:
+            1. Query 1
+            2. Query 2
+            3. Query 3
+            4. Query 4
+            5. Query 5
         """
         try:
             response = model.generate_content(part_prompt)
-            queries = [line.split(". ", 1)[1].strip() for line in response.text.strip().split('\n') if line.strip()]
-            queries_by_part[f"Part {i + 1}"] = queries
+            lines = response.text.strip().split('\n')
+            queries = []
+            for line in lines:
+                line = line.strip()
+                if line:  # Check if line is not empty
+                    parts = line.split(". ", 1)
+                    if len(parts) > 1:
+                        queries.append(parts[1].strip())
+                    else:
+                        # Handle cases where the line doesn't match the expected format
+                        queries.append(line)  # Use the whole line as a query
+            queries_by_part[f"Part {i + 1}"] = queries[:5] #take only the first 5 queries
         except Exception as e:
             st.error(f"Error generating queries for Part {i + 1}: {e}")
-            queries_by_part[f"Part {i+1}"] = ["Error: Could not generate Queries"] #Add error message to queries list
+            queries_by_part[f"Part {i+1}"] = ["Error: Could not generate Queries"]
     return queries_by_part
 
 # ---------------------------------------
