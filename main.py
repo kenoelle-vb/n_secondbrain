@@ -526,9 +526,8 @@ def iterative_refinement(initial_prompt, internet_knowledge, iterations=5, globa
             f"'{current_response}' based on the initial prompt: '{initial_prompt}'.\n"
             "The Format should be:\n"
             "Summary:\n[One short paragraph summary (2-3 sentences)]\n\n"
-            "Content:\n[600-800 words (PARAGRAPH) of refined content]\n\n"
-            "Ensure that the response strictly follows this format."
-            "DO NOT DO ANY OTHER FORMAT THAN PARAGRAPH (DO NOT do tables, bullet points, etc, just PARAGRAPH.)"
+            "Content:\n[10-15 small-medium paragraphs of refined content] DO NOT DO ANY OTHER FORMAT THAN PARAGRAPH (DO NOT do tables, bullet points, etc, just PARAGRAPH.)\n\n"
+            "Ensure that the response strictly follows this format, if it is text. If the output is code, FOLLOW STRICTLY IT'S SYNTAX SO THE CODE WORKS."
         )
         current_response = llm_generate(revision_prompt, model=model)
         time.sleep(np.random.randint(4, 7))
@@ -546,9 +545,8 @@ def iterative_refinement(initial_prompt, internet_knowledge, iterations=5, globa
         f"And considering the previous best response:\n{current_response}\n"
         "The Format should be:\n"
         "Summary:\n[One short paragraph summary (2-3 sentences)]\n\n"
-        "Content:\n[600-800 words (PARAGRAPH) of refined content]\n\n"
-        "Ensure that the response strictly follows this format."
-        "DO NOT DO ANY OTHER FORMAT THAN PARAGRAPH (DO NOT do tables, bullet points, etc, just PARAGRAPH.)"
+        "Content:\n[10-15 small-medium paragraphs of refined content] DO NOT DO ANY OTHER FORMAT THAN PARAGRAPH (DO NOT do tables, bullet points, etc, just PARAGRAPH.)\n\n"
+        "Ensure that the response strictly follows this format, if it is text. If the output is code, FOLLOW STRICTLY IT'S SYNTAX SO THE CODE WORKS."
     )
     final_response = llm_generate(final_prompt, model=model)
     time.sleep(np.random.randint(4, 7))
