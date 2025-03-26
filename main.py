@@ -511,42 +511,43 @@ def iterative_refinement(initial_prompt, internet_knowledge, iterations=5, globa
     max_diff_response = initial_response
     max_diff = 0
 
-    for i in range(1, iterations):  # Start from 1 since 0 is already handled
-        start_index = (i * chunk_size) % knowledge_len
-        end_index = min(start_index + chunk_size, knowledge_len)
-        truncated_knowledge = internet_knowledge[start_index:end_index]
-        
-        feedback_prompt = (
-            f"Overall Context: {global_context}\n\n"
-            f"Internet Knowledge (truncated): {truncated_knowledge}\n\n"
-            f"Based on this output: '{current_response}', identify any weaknesses or missing information. "
-            f"Provide feedback in 7-9 bullet points, make sure the points are mid-long detailed sentences."
-        )
-        feedback = llm_generate(feedback_prompt, model=model)
-        time.sleep(np.random.randint(4, 7))
-        thinking_logs.append(feedback)
-        
-        revision_prompt = (
-            f"Overall Context: {global_context}\n\n"
-            f"Internet Knowledge (truncated): {truncated_knowledge}\n\n"
-            f"Make sure to bring up sentences, statistics, statements, or ANYTHING RELEVANT as CONCRETE SUPPORTING EVIDENCE (Bring it up inside the Content Paragraphs and NOT OUTSIDE)."
-            f"Taking into account the following feedback: '{feedback}', revise and improve this output: "
-            f"'{current_response}' based on the initial prompt: '{initial_prompt}'.\n"
-            "The Format should be:\n"
-            "Summary:\n[One short paragraph summary (2-3 sentences)]\n\n"
-            "Content:\n[5-7 medium-medium large paragraphs of refined content] DO NOT DO ANY OTHER FORMAT THAN PARAGRAPH (DO NOT do tables, bullet points, etc, just PARAGRAPH.)\n\n"
-            "Ensure that the response strictly follows this format, if it is text. If the output is code, FOLLOW STRICTLY IT'S SYNTAX SO THE CODE WORKS."
-        )
-        current_response = llm_generate(revision_prompt, model=model)
-        time.sleep(np.random.randint(4, 7))
-        all_responses.append(current_response)
-        
-        current_embedding = embed(current_response, existing_vectorizer=vectorizer)
-        embeddings.append(current_embedding)
-        similarity_diff = 1 - cosine_similarity(embeddings[0], current_embedding)[0][0]
-        if similarity_diff > max_diff:
-            max_diff = similarity_diff
-            max_diff_response = current_response
+    if knowledge_len > 0: # add this conditional check
+        for i in range(1, iterations):  # Start from 1 since 0 is already handled
+            start_index = (i * chunk_size) % knowledge_len
+            end_index = min(start_index + chunk_size, knowledge_len)
+            truncated_knowledge = internet_knowledge[start_index:end_index]
+            
+            feedback_prompt = (
+                f"Overall Context: {global_context}\n\n"
+                f"Internet Knowledge (truncated): {truncated_knowledge}\n\n"
+                f"Based on this output: '{current_response}', identify any weaknesses or missing information. "
+                f"Provide feedback in 7-9 bullet points, make sure the points are mid-long detailed sentences."
+            )
+            feedback = llm_generate(feedback_prompt, model=model)
+            time.sleep(np.random.randint(4, 7))
+            thinking_logs.append(feedback)
+            
+            revision_prompt = (
+                f"Overall Context: {global_context}\n\n"
+                f"Internet Knowledge (truncated): {truncated_knowledge}\n\n"
+                f"Make sure to bring up sentences, statistics, statements, or ANYTHING RELEVANT as CONCRETE SUPPORTING EVIDENCE (Bring it up inside the Content Paragraphs and NOT OUTSIDE)."
+                f"Taking into account the following feedback: '{feedback}', revise and improve this output: "
+                f"'{current_response}' based on the initial prompt: '{initial_prompt}'.\n"
+                "The Format should be:\n"
+                "Summary:\n[One short paragraph summary (2-3 sentences)]\n\n"
+                "Content:\n[5-7 medium-medium large paragraphs of refined content] DO NOT DO ANY OTHER FORMAT THAN PARAGRAPH (DO NOT do tables, bullet points, etc, just PARAGRAPH.)\n\n"
+                "Ensure that the response strictly follows this format, if it is text. If the output is code, FOLLOW STRICTLY IT'S SYNTAX SO THE CODE WORKS."
+            )
+            current_response = llm_generate(revision_prompt, model=model)
+            time.sleep(np.random.randint(4, 7))
+            all_responses.append(current_response)
+            
+            current_embedding = embed(current_response, existing_vectorizer=vectorizer)
+            embeddings.append(current_embedding)
+            similarity_diff = 1 - cosine_similarity(embeddings[0], current_embedding)[0][0]
+            if similarity_diff > max_diff:
+                max_diff = similarity_diff
+                max_diff_response = current_response
 
     final_prompt = (
         f"{initial_prompt}\n\nTaking into account the following feedback:\n{''.join(thinking_logs[-4:])}\n\n"
