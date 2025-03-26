@@ -250,19 +250,22 @@ def getNewsData(query):
     return news_results
 
 def download_and_parse_with_timeout(article, link, timeout=10):
-    """Downloads and parses an article with a time limit."""
+    """Downloads and parses an article with a time limit, filters short content."""
     
     def download_and_parse():
         try:
             article.download()
             article.parse()
             article.nlp()  # Extract summary, keywords, etc.
-            result['data'] = {
-                "title": article.title,
-                "link": link,
-                "summary": article.summary,
-                "content": article.text
-            }
+            if len(article.text) >= 1000: # Check content length
+                result['data'] = {
+                    "title": article.title,
+                    "link": link,
+                    "summary": article.summary,
+                    "content": article.text
+                }
+            else:
+                result['data'] = None # return none if content too short
         except Exception as e:
             result['error'] = str(e)
 
@@ -282,12 +285,13 @@ def download_and_parse_with_timeout(article, link, timeout=10):
     return result['data']
 
 def extract_article_info(links):
+    """Extracts relevant information from a list of article links, filters short articles."""
     articles_info = []
     for link in links:
         try:
             article = Article(link)
             article_data = download_and_parse_with_timeout(article, link)
-            if article_data:
+            if article_data: # only append if article data is not none (not short)
                 articles_info.append(article_data)
 
         except Exception as e:
@@ -827,7 +831,7 @@ if (prompt_input
                     articles_info = extract_article_info(links)
                     
                     for article in articles_info:
-                        if article:
+                        if article:  # Check if article is not None (i.e., content length was sufficient)
                             part_content += article["content"] + "\n"
                             part_data.append({
                                 "query": formatted_query,
@@ -839,10 +843,11 @@ if (prompt_input
                     debug_log = f"After query '{query}', downloaded articles count for Part {idx}: {len(part_data)}\n"
                     progress_container.info(debug_log)
                     time.sleep(1)
-                # Store the internet knowledge and dataframe for this part
-                internet_knowledge[part] = part_content
-                df = pd.DataFrame(part_data)
-                excel_dataframes[f"internetsearch_part{idx}"] = df
+
+                    # Store the internet knowledge and dataframe for this part
+                    internet_knowledge[part] = part_content
+                    df = pd.DataFrame(part_data)
+                    excel_dataframes[f"internetsearch_part{idx}"] = df
                 debug_log = f"Final article count for TOC Part {idx}: {len(df)}\n"
                 progress_container.info(debug_log)
         
