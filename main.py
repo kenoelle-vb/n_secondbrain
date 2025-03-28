@@ -1,9 +1,9 @@
-# streamlit run "C:/Users/keno/OneDrive/Documents/Projects/n_secondbrain/1_TESTAGAIN.py"
+# streamlit run "C:/Users/keno/OneDrive/Documents/Projects/n_secondbrain applier/Z_TEST.py"
 # Create me a detailed guide and plan for me as an Indonesian to be able to work or be a university student (Master's) in Japan.
 
 import streamlit as st
 import requests
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, ParserRejectedMarkup
 from newspaper import Article
 import google.generativeai as genai
 import pandas as pd
@@ -304,42 +304,27 @@ def extract_article_info(links):
 # Query Generation Functions
 # ---------------------------------------
 
-def make_prompt_queries_for_part(prompt, n_queries=5, model=None):
-    """
-    Uses the language model to generate n_queries short (1-2 word) Google dork queries for a single TOC part.
-    The prompt instructs the model to output one query per line.
-    """
-    full_prompt = f"""
-    For this prompt: {prompt}
-    Generate {n_queries} short Google dorking search queries. 
-    Each query should be 1-2 words only, without quotation marks except for specific names.
-    Format each query on a new line.
-    The queries should exclude filetypes : xlsx,pdf,docx,ppt, etc.
-    """
-    response = model.generate_content(full_prompt)
-    queries = [line.strip() for line in response.text.strip().split('\n') if line.strip()]
-    return queries[:n_queries]
-
-def make_prompt_queries(prompt, n_parts, model):
+def make_prompt_queries(prompt, n_parts, model): 
     """
     Generates Google search queries for each part of the Table of Contents (TOC).
     Handles potential variations in LLM response format to prevent index errors.
     """
     queries_by_part = {}
     for i in range(n_parts):
+        # type_input, language_input, prompt_input, context_input
         part_prompt = f"""
-            For this main prompt: {prompt}, generate 5 google search queries. 
+            USING UNIVERSITY-LEVEL {language_input} LANGUAGE,
+            For this main prompt: {prompt}, generate 5 google dork queries. 
             These queries must be for part {i + 1} of the prompt.
-            These queries must be very specific, and should not use quotation marks unless it is for a name or institution.
-            Do not mention the other parts.
-            Do not include any other text except for the queries.
+            These queries must be broad, and should not use quotation marks unless it is for a name or institution.
+            THE DESIRED OUTPUT IS A {type_input}, Generate queries that will result in the creation of that.
+            The queries must use the key points of the desired prompt.
             Follow this format:
             1. Query 1
             2. Query 2
             3. Query 3
             4. Query 4
             5. Query 5
-            If the requested output is Code, then DO NOT WRITE CODE AS THE QUERY, but USE KEY WORDS OF THE PROJECT TO GENERATE AS QUERY.
         """
         try:
             response = model.generate_content(part_prompt)
@@ -372,9 +357,12 @@ def table_of_contents(prompt, n_parts=5, model=None):
     if model is None:
         st.error("Model did not load successfully, please reset the website.")
         return ""
-
+    # type_input, language_input, prompt_input, context_input
     full_prompt = f"""
+        THE DESIRED OUTPUT IS A {type_input},
+        USING UNIVERSITY-LEVEL {language_input} LANGUAGE,
         For this prompt: {prompt}
+        For context, use this : {context_input}
         Divide the task in the prompt into {n_parts} parts.
         Generate a short title for each part.
         Just generate the list of titles, nothing else.
@@ -400,22 +388,15 @@ def extract_parts(toc_text):
 
 
 def generate_prompts_for_parts(parts_list, model, global_context):
-    """
-    Generates detailed prompts for each part of the Table of Contents (TOC).
-
-    Args:
-        parts_list (list): List of TOC part names.
-        model (genai.GenerativeModel): The generative AI model.
-        global_context (str): The overall context for the task.
-
-    Returns:
-        list: A list of detailed prompts, one for each TOC part.
-    """
     prompts = []
     for part in parts_list:
-        full_prompt = f"""
-        {global_context}
+        # type_input, language_input, prompt_input, context_input
+        full_prompt = f""" 
+        These are the parts of the tasks : {global_context}
+        The objective is to : {prompt_input}
 
+        THE DESIRED OUTPUT IS A {type_input}, Generate a prompt that will result in the creation of that.
+        USING UNIVERSITY-LEVEL {language_input} LANGUAGE,
         For this part of the task: "{part}", please generate a detailed prompt. 
         The detailed prompt should be very specific, and should include what the user should focus on for this part.
         Do not mention the other parts.
@@ -433,11 +414,24 @@ def llm_generate(prompt, model=None, context=None):
     Generates content using the language model.
     Optionally includes additional context.
     """
+    # type_input, language_input, prompt_input, context_input
     if context:
-        prompt_with_context = f"{prompt}\n\nContext:\n{context}"
+        prompt_with_context = f""" 
+        The objective is to : {prompt_input}
+
+        THE DESIRED OUTPUT IS A {type_input}, Generate a prompt that will result in the creation of that.
+        USING UNIVERSITY-LEVEL {language_input} LANGUAGE,
+        {prompt}\n\nContext:\n{context}"""
         response = model.generate_content(prompt_with_context)
     else:
-        response = model.generate_content(prompt)
+        prompt_baseless = f""" 
+        The objective is to : {prompt_input}
+
+        THE DESIRED OUTPUT IS A {type_input}, Generate a prompt that will result in the creation of that.
+        USING UNIVERSITY-LEVEL {language_input} LANGUAGE,
+        {prompt}
+        """
+        response = model.generate_content(prompt_baseless)
     text = response.text.replace("*", "")
     return text
 
@@ -502,7 +496,7 @@ def iterative_refinement(initial_prompt, internet_knowledge, iterations=5, globa
     end_index = min(start_index + chunk_size, knowledge_len)
     truncated_knowledge = internet_knowledge[start_index:end_index]
     combined_prompt = f"{global_context}\n\n{truncated_knowledge}\n\n{initial_prompt}" if global_context or truncated_knowledge else initial_prompt
-    initial_response = llm_generate(combined_prompt, model=model)
+    initial_response = llm_generate(combined_prompt, model=model, context=context_input)
     all_responses.append(initial_response)
     
     current_response = initial_response
@@ -518,16 +512,18 @@ def iterative_refinement(initial_prompt, internet_knowledge, iterations=5, globa
             truncated_knowledge = internet_knowledge[start_index:end_index]
             
             feedback_prompt = (
+                # type_input, language_input, prompt_input, context_input
                 f"Overall Context: {global_context}\n\n"
                 f"Internet Knowledge (truncated): {truncated_knowledge}\n\n"
                 f"Based on this output: '{current_response}', identify any weaknesses or missing information. "
                 f"Provide feedback in 7-9 bullet points, make sure the points are mid-long detailed sentences."
             )
-            feedback = llm_generate(feedback_prompt, model=model)
+            feedback = llm_generate(feedback_prompt, model=model, context=context_input)
             time.sleep(np.random.randint(4, 7))
             thinking_logs.append(feedback)
             
             revision_prompt = (
+                # type_input, language_input, prompt_input, context_input
                 f"Overall Context: {global_context}\n\n"
                 f"Internet Knowledge (truncated): {truncated_knowledge}\n\n"
                 f"Make sure to bring up sentences, statistics, statements, or ANYTHING RELEVANT as CONCRETE SUPPORTING EVIDENCE (Bring it up inside the Content Paragraphs and NOT OUTSIDE)."
@@ -538,7 +534,7 @@ def iterative_refinement(initial_prompt, internet_knowledge, iterations=5, globa
                 "Content:\n[5-7 medium-medium large paragraphs of refined content] DO NOT DO ANY OTHER FORMAT THAN PARAGRAPH (DO NOT do tables, bullet points, etc, just PARAGRAPH.)\n\n"
                 "Ensure that the response strictly follows this format, if it is text. If the output is code, FOLLOW STRICTLY IT'S SYNTAX SO THE CODE WORKS."
             )
-            current_response = llm_generate(revision_prompt, model=model)
+            current_response = llm_generate(revision_prompt, model=model, context=context_input)
             time.sleep(np.random.randint(4, 7))
             all_responses.append(current_response)
             
@@ -550,6 +546,7 @@ def iterative_refinement(initial_prompt, internet_knowledge, iterations=5, globa
                 max_diff_response = current_response
 
     final_prompt = (
+        # type_input, language_input, prompt_input, context_input
         f"{initial_prompt}\n\nTaking into account the following feedback:\n{''.join(thinking_logs[-4:])}\n\n"
         f"And considering the previous best response:\n{current_response}\n"
         "The Format should be:\n"
@@ -557,7 +554,7 @@ def iterative_refinement(initial_prompt, internet_knowledge, iterations=5, globa
         "Content:\n[5-7 medium-medium large paragraphs of refined content] DO NOT DO ANY OTHER FORMAT THAN PARAGRAPH (DO NOT do tables, bullet points, etc, just PARAGRAPH.)\n\n"
         "Ensure that the response strictly follows this format, if it is text. If the output is code, FOLLOW STRICTLY IT'S SYNTAX SO THE CODE WORKS."
     )
-    final_response = llm_generate(final_prompt, model=model)
+    final_response = llm_generate(final_prompt, model=model, context=context_input)
     time.sleep(np.random.randint(4, 7))
     final_embedding = embed(final_response, existing_vectorizer=vectorizer)
     embeddings.append(final_embedding)
@@ -703,8 +700,15 @@ col1, col2, col3 = st.columns([3, 2, 2])
 
 # Column 1: Prompt Input and Length Info
 with col1.expander("", expanded=True):
+    st.subheader("Desired Output?") # type_input, language_input, prompt_input, context_input
+    type_input = st.text_input("(ex : An Essay, or an Application Form, maybe a Journal?)", "")
+    language_input = st.selectbox(
+        "Select Language",
+        ("Indonesian", "English", "Japanese",),
+    )
     st.subheader("Enter Main Prompt")
-    prompt_input = st.text_area("Main Prompt", height=410)
+    prompt_input = st.text_input("Enter the main prompt for your task (Make it short and concise! (1-3 sentences))", "")
+    context_input = st.text_area("(ex : A reference for a Journal, or your CV, or maybe background Information? )", height=410)
     prompt_length_container = st.container()
     if prompt_input:
         prompt_len = len(prompt_input)
@@ -855,6 +859,8 @@ if (prompt_input
         # Step 4: Iterative Refinement for each TOC part
         refined_results = []
         total_parts = len(content_prompts)
+        previous_part_outputs = [] # Initialize list to store previous outputs
+
         for idx, cp in enumerate(content_prompts, start=0):
             debug_log = f"Processing iterative refinement for Part {idx+1}/{total_parts}...\n"
             progress_container.info(debug_log)
@@ -865,6 +871,7 @@ if (prompt_input
             max_response, init_response, thinking_logs = iterative_refinement(
                 cp, 
                 internet_knowledge=current_internet_knowledge, 
+                previous_outputs=previous_part_outputs, # Pass previous outputs
                 iterations=n_iterations, 
                 global_context=global_context, 
                 model=model
@@ -874,6 +881,9 @@ if (prompt_input
                 "INITIAL OUTPUT": init_response[0],
                 "THINKING LOGS": thinking_logs
             })
+
+            previous_part_outputs.append(max_response[0]) #store output for next part
+
             debug_log = f"Finished refinement for Part {idx+1}\n"
             progress_container.info(debug_log)
             time.sleep(1)
