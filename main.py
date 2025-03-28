@@ -319,6 +319,7 @@ def make_prompt_queries(prompt, n_parts, model):
             These queries must be broad, and should not use quotation marks unless it is for a name or institution.
             THE DESIRED OUTPUT IS A {type_input}, Generate queries that will result in the creation of that.
             The queries must use the key points of the desired prompt.
+            DO NOT GENERATE PROMPTS THAT ARE UNRELATED TO THE MAIN OBJECTIVE.
             Follow this format:
             1. Query 1
             2. Query 2
@@ -515,7 +516,7 @@ def iterative_refinement(initial_prompt, internet_knowledge, iterations=5, globa
                 # type_input, language_input, prompt_input, context_input
                 f"Overall Context: {global_context}\n\n"
                 f"Internet Knowledge (truncated): {truncated_knowledge}\n\n"
-                f"Based on this output: '{current_response}', identify any weaknesses or missing information. "
+                f"Based on this output: '{current_response}', identify any weaknesses, missing information, improvements that can be done, ANYTHING THAT CAN MAKE IT BETTER."
                 f"Provide feedback in 7-9 bullet points, make sure the points are mid-long detailed sentences."
             )
             feedback = llm_generate(feedback_prompt, model=model, context=context_input)
@@ -526,13 +527,13 @@ def iterative_refinement(initial_prompt, internet_knowledge, iterations=5, globa
                 # type_input, language_input, prompt_input, context_input
                 f"Overall Context: {global_context}\n\n"
                 f"Internet Knowledge (truncated): {truncated_knowledge}\n\n"
-                f"Make sure to bring up sentences, statistics, statements, or ANYTHING RELEVANT as CONCRETE SUPPORTING EVIDENCE (Bring it up inside the Content Paragraphs and NOT OUTSIDE)."
+                f"Make sure to bring up sentences, statistics, statements, or ANYTHING RELEVANT as CONCRETE SUPPORTING EVIDENCE (Bring it up inside the Content and NOT OUTSIDE)."
                 f"Taking into account the following feedback: '{feedback}', revise and improve this output: "
                 f"'{current_response}' based on the initial prompt: '{initial_prompt}'.\n"
                 "The Format should be:\n"
                 "Summary:\n[One short paragraph summary (2-3 sentences)]\n\n"
-                "Content:\n[5-7 medium-medium large paragraphs of refined content] DO NOT DO ANY OTHER FORMAT THAN PARAGRAPH (DO NOT do tables, bullet points, etc, just PARAGRAPH.)\n\n"
-                "Ensure that the response strictly follows this format, if it is text. If the output is code, FOLLOW STRICTLY IT'S SYNTAX SO THE CODE WORKS."
+                f"Content:\nThe Desired Format in {type_input}, with a MAXIMUM OF 400-600 WORDS\n\n"
+                "Ensure that the response strictly follows this format."
             )
             current_response = llm_generate(revision_prompt, model=model, context=context_input)
             time.sleep(np.random.randint(4, 7))
@@ -551,8 +552,8 @@ def iterative_refinement(initial_prompt, internet_knowledge, iterations=5, globa
         f"And considering the previous best response:\n{current_response}\n"
         "The Format should be:\n"
         "Summary:\n[One short paragraph summary (2-3 sentences)]\n\n"
-        "Content:\n[5-7 medium-medium large paragraphs of refined content] DO NOT DO ANY OTHER FORMAT THAN PARAGRAPH (DO NOT do tables, bullet points, etc, just PARAGRAPH.)\n\n"
-        "Ensure that the response strictly follows this format, if it is text. If the output is code, FOLLOW STRICTLY IT'S SYNTAX SO THE CODE WORKS."
+        f"Content:\nThe Desired Format in {type_input}, with a MAXIMUM OF 400-600 WORDS\n\n"
+        "Ensure that the response strictly follows this format."
     )
     final_response = llm_generate(final_prompt, model=model, context=context_input)
     time.sleep(np.random.randint(4, 7))
@@ -708,15 +709,24 @@ with col1.expander("", expanded=True):
     )
     st.subheader("Enter Main Prompt")
     prompt_input = st.text_input("Enter the main prompt for your task (Make it short and concise! (1-3 sentences))", "")
-    context_input = st.text_area("(ex : A reference for a Journal, or your CV, or maybe background Information? )", height=410)
+    context_input = st.text_area("The context for the task (ex : A reference for a Journal, or your CV, or maybe background Information? )", height=210)
+    context_len_container = st.container()
     prompt_length_container = st.container()
+    if context_input:
+        context_len = len(context_input)
+        context_len_container.info(f"Context length: {context_len} / 10000")
+        if context_len > 10000:
+            context_len_container.error("Context exceeds limit")
+    else:
+        context_len_container.info("Context length: 0 / 10000")
+
     if prompt_input:
         prompt_len = len(prompt_input)
-        prompt_length_container.info(f"Prompt length: {prompt_len} / 10000")
-        if prompt_len > 10000:
+        prompt_length_container.info(f"Prompt length: {prompt_len} / 500")
+        if prompt_len > 500:
             prompt_length_container.error("Prompt exceeds limit")
     else:
-        prompt_length_container.info("Prompt length: 0 / 10000")
+        prompt_length_container.info("Prompt length: 0 / 500")
 
 # Column 2: TOC and Refinement Settings
 with col2.expander("", expanded=True):
@@ -871,7 +881,7 @@ if (prompt_input
             max_response, init_response, thinking_logs = iterative_refinement(
                 cp, 
                 internet_knowledge=current_internet_knowledge, 
-                previous_outputs=previous_part_outputs, # Pass previous outputs
+                #previous_outputs=previous_part_outputs, # Pass previous outputs
                 iterations=n_iterations, 
                 global_context=global_context, 
                 model=model
