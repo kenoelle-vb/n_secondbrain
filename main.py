@@ -520,7 +520,7 @@ def iterative_refinement(initial_prompt, internet_knowledge, iterations=5, globa
                 f"Provide feedback in 7-9 bullet points, make sure the points are mid-long detailed sentences."
             )
             feedback = llm_generate(feedback_prompt, model=model, context=context_input)
-            time.sleep(np.random.randint(4, 7))
+            time.sleep(8)
             thinking_logs.append(feedback)
             
             revision_prompt = (
@@ -536,7 +536,7 @@ def iterative_refinement(initial_prompt, internet_knowledge, iterations=5, globa
                 "Ensure that the response strictly follows this format."
             )
             current_response = llm_generate(revision_prompt, model=model, context=context_input)
-            time.sleep(np.random.randint(4, 7))
+            time.sleep(8)
             all_responses.append(current_response)
             
             current_embedding = embed(current_response, existing_vectorizer=vectorizer)
@@ -556,7 +556,7 @@ def iterative_refinement(initial_prompt, internet_knowledge, iterations=5, globa
         "Ensure that the response strictly follows this format."
     )
     final_response = llm_generate(final_prompt, model=model, context=context_input)
-    time.sleep(np.random.randint(4, 7))
+    time.sleep(8)
     final_embedding = embed(final_response, existing_vectorizer=vectorizer)
     embeddings.append(final_embedding)
     visualize_iterative_embeddings(embeddings)
@@ -857,7 +857,7 @@ if (prompt_input
                             })
                     debug_log = f"After query '{query}', downloaded articles count for Part {idx}: {len(part_data)}\n"
                     progress_container.info(debug_log)
-                    time.sleep(1)
+                    time.sleep(3)
 
                     # Store the internet knowledge and dataframe for this part
                     internet_knowledge[part] = part_content
@@ -896,7 +896,7 @@ if (prompt_input
 
             debug_log = f"Finished refinement for Part {idx+1}\n"
             progress_container.info(debug_log)
-            time.sleep(1)
+            time.sleep(3)
         progress_container.empty()
         st.success("Refinement complete!")
     
