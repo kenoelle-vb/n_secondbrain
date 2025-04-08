@@ -517,7 +517,7 @@ def iterative_refinement(initial_prompt, internet_knowledge, iterations=5, globa
                 f"Overall Context: {global_context}\n\n"
                 f"Internet Knowledge (truncated): {truncated_knowledge}\n\n"
                 f"Based on this output: '{current_response}', identify any weaknesses, missing information, improvements that can be done, ANYTHING THAT CAN MAKE IT BETTER."
-                f"Provide feedback in 7-9 bullet points, make sure the points are mid-long detailed sentences."
+                f"Provide feedback in 4-5 bullet points, make sure the points are short-mid detailed sentences."
             )
             feedback = llm_generate(feedback_prompt, model=model, context=context_input)
             time.sleep(8)
@@ -527,12 +527,11 @@ def iterative_refinement(initial_prompt, internet_knowledge, iterations=5, globa
                 # type_input, language_input, prompt_input, context_input
                 f"Overall Context: {global_context}\n\n"
                 f"Internet Knowledge (truncated): {truncated_knowledge}\n\n"
-                f"Make sure to bring up sentences, statistics, statements, or ANYTHING RELEVANT as CONCRETE SUPPORTING EVIDENCE (Bring it up inside the Content and NOT OUTSIDE)."
                 f"Taking into account the following feedback: '{feedback}', revise and improve this output: "
                 f"'{current_response}' based on the initial prompt: '{initial_prompt}'.\n"
                 "The Format should be:\n"
                 "Summary:\n[One short paragraph summary (2-3 sentences)]\n\n"
-                f"Content:\nThe Desired Format in {type_input}, with a MAXIMUM OF 400-600 WORDS\n\n"
+                f"Content:\nThe Desired Format in {type_input}"
                 "Ensure that the response strictly follows this format."
             )
             current_response = llm_generate(revision_prompt, model=model, context=context_input)
@@ -552,7 +551,7 @@ def iterative_refinement(initial_prompt, internet_knowledge, iterations=5, globa
         f"And considering the previous best response:\n{current_response}\n"
         "The Format should be:\n"
         "Summary:\n[One short paragraph summary (2-3 sentences)]\n\n"
-        f"Content:\nThe Desired Format in {type_input}, with a MAXIMUM OF 400-600 WORDS\n\n"
+        f"Content:\nThe Desired Format in {type_input}"
         "Ensure that the response strictly follows this format."
     )
     final_response = llm_generate(final_prompt, model=model, context=context_input)
