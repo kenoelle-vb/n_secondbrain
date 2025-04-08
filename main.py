@@ -753,7 +753,7 @@ with col3.expander("", expanded=True):
         default=["docx", "excel", "txt"]
     )
     if prompt_input:
-        est_time = toc_parts * n_iterations * 0.8
+        est_time = toc_parts * n_iterations * 1.6
         st.warning(f"Estimated processing time: ~{est_time:.1f} minutes.")
     if prompt_input and "toc_locked" not in st.session_state:
         generate_toc_button = st.button("Generate TOC", key="generate_toc")
